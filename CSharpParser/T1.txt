@@ -1,0 +1,31 @@
+public class Test1 {
+  public int getX() {
+    for (;;) {
+      switch(op) {
+         case a : if(1) if(1);
+         default : for(;;) if(c);
+      }
+    }
+    
+    if(a)
+     if(b)
+      if(c);
+  }
+
+  public int getY() {
+   try {    
+    if(a);
+
+    }
+    catch(Exp a) {
+      for(;;) if(a);
+
+      if(a);
+      else
+       if(b)
+         if(c);
+	 else
+	  if(d);	
+    }
+  }
+}

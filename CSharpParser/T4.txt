@@ -1,0 +1,20 @@
+class Test
+{
+	int x;
+	static int y;
+	void F() {
+		x = 1;			// Ok, same as this.x = 1
+		y = 1;			// Ok, same as Test.y = 1
+	}
+	static void G() {
+		x = 1;			// Error, cannot access this.x
+		y = 1;			// Ok, same as Test.y = 1
+	}
+	static void Main() {
+		Test t = new Test();
+		t.x = 1;			// Ok
+		t.y = 1;			// Error, cannot access static member through instance
+		Test.x = 1;		// Error, cannot access instance member through type
+		Test.y = 1;		// Ok
+	}
+}

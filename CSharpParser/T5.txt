@@ -1,0 +1,46 @@
+/* List este o clasa publica
+ce reprezinta ...*/
+
+/* begin List */
+public class List : ListArray
+{	
+	// Private data structure
+
+	// pointer spre primul nod	
+	private Node first = null;
+	// pointer spre al doilea nod
+	private Node last = null;
+	
+	// Public interface
+
+	// adauga un nod la inceput
+	public void AddToFront(object o);
+	public void AddToBack(object o) {
+	  // un intreg
+          int i;
+          /* data de tip double */ double d;
+
+	}
+	public object RemoveFromFront();
+	public object AddToFront();
+}
+/* end List */
+
+/* begin Point */
+public class Point
+{
+	// contin punctul de coordonate x si y
+	public int x;
+	public int y;
+
+	public boolean isOrigin() { 
+	  // este originea axelor
+	  if (x == 0 && y == 0)
+		return true;
+	  /* nu este
+            originea axelor */
+          return false;
+	}
+	// end method isOrigin
+}
+/* end Point */

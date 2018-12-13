@@ -1,0 +1,13 @@
+class A { }
+
+class B:A { }
+
+class C:B { }
+
+class D:B { }
+
+class E:D { }
+
+class F { }
+
+class G:F { }
