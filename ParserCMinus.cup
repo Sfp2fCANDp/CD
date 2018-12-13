@@ -1,0 +1,404 @@
+/* Imported packages */
+
+import Cls.Exp.*;
+import Cls.Stm.*;
+import Cls.Type.*;
+import Cls.Unit.*;
+import Cls.Decl.*;
+import Cls.Decl.Op.*;
+import Cls.Decl.Mod.*;
+import Cls.Decl.Attrib.*;
+
+import java.lang.*;
+import java.util.*;
+import java_cup.runtime.*;
+
+/* Parser code to change the way the parser reports errors (include
+   line and column number of the error). */
+parser code {: 
+  LexerCMinus lexer;
+
+  public parser(LexerCMinus lexer) { 
+    this.lexer = lexer; 
+  }
+
+  /* Change the method report_error so it will display the line 
+     and column of where the error occurred in the input as well as the reason 
+     for the error which is passed into the method in the String 'message'.  */ 
+  public void report_error(String message, Object info) {
+
+    /* Create a StringBuffer called 'm' with the string 'Error' in it. */ 
+    StringBuffer m = new StringBuffer("Error");
+
+    /* Check if the information passed to the method is the same type as the 
+       type java_cup.runtime.Symbol. */ 
+    if (info instanceof java_cup.runtime.Symbol) {
+
+      /* Declare a java_cup.runtime.Symbol object 's' with the information in the 
+          object info that is being typecasted as a java_cup.runtime.Symbol object. */ 
+      java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+
+      /* Check if the line number in the input is greater or equal to zero. */ 
+      if (s.left >= 0) {
+
+        /* Add to the end of the StringBuffer error message the line number of 
+           the error in the input. */ 
+        m.append(" in line "+(s.left+1));
+
+        /* Check if the column number in the input is greater or equal to 
+           zero. */ 
+        if (s.right >= 0)
+
+          /* Add to the end of the StringBuffer error message the column number 
+             of the error in the input. */ 
+          m.append(", column "+(s.right+1)); 
+        } 
+    }
+
+    /* Add to the end of the StringBuffer error message created in this 
+       method the message that was passed into this method. */ 
+    m.append(" : "+message);
+
+    /* Print the contents of the StringBuffer 'm', which contains an error 
+       message out on a line. */ 
+    System.err.println(m); 
+  }
+
+  /* Change the method report_fatal_error so when it reports a fatal error it 
+     will display the line and column number of where the fatal error 
+     occurred in the input as well as the reason for the fatal error which is 
+     passed into the method in the object 'message' and then exit.*/ 
+  public void report_fatal_error(String message, Object info) { 
+    report_error(message, info); 
+    System.exit(1); 
+    } 
+:};
+	
+	scan with {: return lexer.yylex(); :}; 
+
+	
+/* ------------ Declaration of Terminals and Non Terminals Section ----------- */
+
+/*--------Terminals--------*/
+
+/* Keywords */
+terminal ELSE, IF, INT, RETURN, VOID, WHILE;
+
+/*Operators*/
+terminal ADD, SUB, MULT, DIV, LT, GT, LTOET, GTOET, DEQL, NOTEQL, EQL, SEMI,
+		COMMA, LPAREN, RPAREN, LSQBKT,RSQBKT, LBRKT, RBRKT;
+
+/*Identifier*/
+terminal ID;
+
+/*Numeric constant*/
+terminal NUMERIC_CONSTANT;
+
+/*White space*/
+terminal WHITESPACE;
+
+/*String*/
+terminal STRING;
+
+/*Literals*/
+terminal Integer    INTLITERAL;
+
+/*--------Non-Terminals--------*/
+
+non terminal Program      program;
+non terminal LinkedList       declList;
+non terminal Decl           decl;
+non terminal VarDecl      varDecl;
+non terminal FuncDef       funcDef;
+non terminal Type           type;
+non terminal ID           id;
+non terminal LinkedList		params;
+non terminal LinkedList      param_list;
+non terminal FnBodyNode     compound_stmt;
+non terminal FnDeclNode     fnDecl;
+non terminal FormalDeclNode   param_decl;
+non terminal FormalDeclNode   param;
+non terminal LinkedList       local_declarations;
+non terminal LinkedList       statement_list;
+non terminal LinkedList       args;
+non terminal LinkedList       arg_list;
+non terminal Statement         statement;
+non terminal Statement         assignStmt;
+non terminal ExpNode          exp;
+non terminal AssignStmtNode     expression_stmt;
+non terminal Selection_statement     selection_statement;
+non terminal Iteration_statement     iteration_statement;
+non terminal Variable     variable;
+non terminal Simple_expression     simple_expression;
+non terminal Expression     expression;
+non terminal Additive_expression	 additive_expression;
+non terminal Relop	 relop;
+non terminal Term	 term;
+non terminal Addop	 addop;
+non terminal Mulop	 mulop;
+non terminal Factor	 factor;
+non terminal Call	 call;
+non terminal Fun_declaration	 fun_declaration;
+non terminal Return_statement	 return_statement;
+
+
+
+
+/* -------------Precedence and Associatively of Terminals Section----------- */
+
+
+precedence nonassoc EQL, NOTEQL, LT, GT, LTOET, GTOET;
+precedence left ADD, SUB;
+precedence left MULT, DIV;
+precedence right NOTEQL;
+
+start with program;
+
+
+
+/* ---------------------------- Grammar Section ------------------------------ */
+
+program ::= declList: d {: RESULT = new Program(new DeclList(d)); :}
+          ;
+
+declList ::= declList: dl decl: d {: dl.addLast(d); RESULT = dl; :}
+           | /* epsilon */ {: RESULT = new LinkedList(); :}
+           ;
+	
+decl ::= varDecl: v {: RESULT = v; :}
+       | funcDef: f {: RESULT = f; :}
+       ;
+
+varDecl ::= type: t id: i SEMI
+             {: RESULT = new VarDecl(t, i); :}
+          | type: t id: i LSQBKT INTLITERAL: il RSQBKT SEMI
+            {: RESULT = new VarDecl(t, i, new IntLiteral(il)); :}
+          ;
+
+type ::= INT {: RESULT = new IntType(); :}
+       | VOID {: RESULT = new VoidType(); :}
+       ;
+	   
+fun_declaration ::= type: t id: i params: ps compound_stmt: cdst
+		{: RESULT = new FnDeclNode(t, i, new paramsListNode(ps), cdst);
+                :}
+                ;
+		
+params ::= LPAREN RPAREN
+		{: RESULT = new LinkedList<FormalDeclNode>();
+		:}
+		| LPAREN param_list: pmlt RPAREN
+                {: RESULT = pmlt;
+                :}
+                ;
+		
+param_list ::= param_decl: pmdl
+			{: LinkedList<FormalDeclNode> list =
+										new LinkedList<FormalDeclNode>();
+				list.addLast(pmdl);
+				RESULT = list;
+			:}
+			| param_decl: pmdl COMMA param_list:pmlt
+			{: pmlt.addFirst(pmlt);
+				RESULT = pmlt;
+			:}
+			;
+
+param ::= type: t id: i
+	{: RESULT = new FormalDeclNode(t, i);
+	:}
+	| type: t id: i LSQBKT RSQBKT
+	{: List<Integer> i = new ArrayList<Integer>();
+		RESULT = new FormalDeclNode(t, i);
+	:}
+               ;
+
+compound_stmt ::= LBRKT local_declarations: llds statement_list: stlt RBRKT
+		{: RESULT = new FnBodyNode(new DeclList(llds), new StatementList(stlt)); :}
+	;
+
+local_declarations ::= local_declarations: llds varDecl: vl {: llds.addLast(vl); RESULT = llds; :}
+		| /* epsilon */ {: RESULT = new LinkedList(); :}
+		;
+		
+statement_list ::= statement_list: stlt statement: st {: stlt.addLast(st); RESULT = stlt; :}
+        |  /* epsilon */ {: RESULT = new LinkedList(); :}
+        ;
+
+statement ::= expression_stmt: enst
+		  {: RESULT = new AssignStmtNode(enst); 
+		  :}
+		  | compound_stmt: cdst
+		  {: RESULT = new FnBodyNode(cdst);
+		  :}
+		  | selection_statement: snst
+		  {: RESULT = new Selection_statement(snst); 
+		  :}
+		  | iteration_statement: inst
+		  {: RESULT = new Iteration_statement(inst);
+		  :}
+		  | return_statement: rnst
+		  {: RESULT = new Return_statement(rnst);
+		  :}
+		  ;
+		
+expression_stmt ::= assignStmt: anst SEMI 
+				{: RESULT = new AssignStmtNode(anst);
+				:}
+				| SEMI
+				{: RESULT = new AssignStmtNode(null);
+				:}
+				;
+		  
+selection_statement	::= IF LPAREN exp: e RPAREN LBRKT local_declarations: llds statement_list:stlt RBRKT
+          {: RESULT = new IfStmtNode(e, 
+                          new DeclListNode(llds), new StmtListNode(stlt));
+          :}
+		  | IF LPAREN exp:e RPAREN LBRKT local_declarations:llds statement_list:stlt RBRKT ELSE
+			LBRKT local_declarations:llds2 statement_list:stlt2 RBRKT
+          {: RESULT = new IfElseStmtNode(e, 
+                                new DeclListNode(llds), new StmtListNode(stlt),
+                                new DeclListNode(llds2), new StmtListNode(stlt2));
+          :}
+		  ;
+		  
+iteration_statement ::= WHILE LPAREN exp:e RPAREN LBRKT local_declarations:llds statement_list:stlt RBRKT
+					{: RESULT = new WhileStmtNode(e, 
+                                new DeclListNode(llds), new StmtListNode(stlt));
+					:}
+					;
+		  
+return_statement ::= RETURN exp:e SEMI
+				 {: RESULT = new ReturnStmtNode(e);
+				 :}
+				 | RETURN SEMI
+				 {: RESULT = new ReturnStmtNode(null);
+				 :}
+				 ;
+
+expression ::= variable: var EQL expression: en
+		   {: RESULT = en
+		   :}
+		   | simple_expression: seen
+		   {: RESULT = Simple_expression(seen);
+		   :}
+		   ;
+		 
+variable ::= id: i
+		{: RESULT = i;
+		:}
+		| id:i LSQBKT expression: en RSQBKT
+		{: RESULT = new Variable(i, en);
+		:}
+		;
+		
+simple_expression ::= additive_expression: aeen relop: rp additive_expression: aeen2
+				  {: RESULT = new Relop(aeen, rp, aeen2);
+				  :}
+				  | additive_expression: aeen
+				  {: RESULT = new Additive_expression(aeen)
+				  :}
+				  ;
+relop ::= exp: ep1 LTOET exp: ep2
+      {: RESULT = new LessThanOrEqTo(ep1, ep2);
+      :}
+	  |  exp: ep1 LT exp: ep2
+	  {: RESULT = new LessThan(ep1, ep2);
+	  :}
+	  |  exp: ep1 GT exp: ep2
+	  {: RESULT = new GrThan(ep1, ep2);
+	  :}
+	  |  exp: ep1 GTOET exp: ep2
+	  {: RESULT = new GrThanOrEqTo(ep1, ep2);
+	  :}
+	  |  exp: ep1 DEQL exp: ep2
+	  {: RESULT = new DoubEq(ep1, ep2);
+	  :} 
+	  |  exp: ep1 NOTEQL exp: ep2
+	  {: RESULT = new NotEq(ep1, ep2);
+	  :} 
+	  ;
+
+additive_expression ::= additive_expression: aeen addop: ap term:tm
+		{: RESULT = new Addop(aeen, ap, tm);
+		:}
+		| term: tm
+		{: RESULT = new Term(tm);
+		:}
+		;
+
+addop ::= exp: ep1 ADD exp: ep2
+	  {:  RESULT = new AddOp(ep1, ep2);
+	  :} 
+	  |  exp: ep1 SUB exp: ep2
+	  {: RESULT = new SubOp(ep1, ep2);
+	  :} 
+	  ;
+
+term ::= term: tm mulop: mp factor: fr
+	 {: RESULT = new Mulop(tm, mp, fr);
+	 :}
+	 | factor: fr
+	 {:RESULT = new Factor(fr);
+	 :}
+	 ;
+
+mulop ::= exp: ep1 MULT exp: ep2
+	  {:  RESULT = new MulOp(ep1, ep2);
+	  :} 
+	  |  exp: ep1 DIV exp: ep2
+	  {: RESULT = new DivOp(ep1, ep2);
+	  :} 
+	  ; 
+
+factor ::= LPAREN expression: en RPAREN
+	   {: RESULT = new Expression(en);
+	   :}
+	   | variable: ve
+	   {: RESULT = new Variable(ve);
+	   :}
+	   | call: cl
+	   {: RESULT = new Call(cl);
+	   :}
+	   | NUMERIC_CONSTANT
+	   {: RESULT = NUMERIC_CONSTANT;
+	   :}
+	   ;
+	   
+call ::= id: i LPAREN args: as RPAREN
+	 {: RESULT = new ExpCall(, as);
+	 :}
+	 ;
+
+args ::= arg_list: aglt
+	 {: RESULT = new LinkedList(aglt);
+	 :}
+	 | /* epsilon */ {: RESULT = new LinkedList(); :}
+	 ;
+
+arg_list ::= arg_list: aglt COMMA expression: en
+		 {: RESULT = addElement(aglt, en);
+		 :}
+		 | expression : en
+		 {: RESULT = new LinkedList();
+			RESULT.addElement(en);
+		 :}
+		 ;
+	   
+	   
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
